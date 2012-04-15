@@ -14,184 +14,136 @@
  */
 package net.amoabeng.util.jdbc;
 
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.*;
+import net.amoabeng.util.CompareUtils;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Objects.requireNonNull;
-import static net.amoabeng.util.CollectionUtils.*;
-import static net.amoabeng.util.jdbc.JdbcUtils.*;
+import java.io.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static java.lang.String.valueOf;
+import static net.amoabeng.util.CollectionUtils.join;
+import static net.amoabeng.util.jdbc.JdbcUtils.getColumnMetaData;
 
 /**
  * @author Manuel Amoabeng
  */
 public class QueryDiff {
 
-    private static final int THIS_RECORD_DATA = 0, THAT_RECORD_DATA = 1, COMMON_DATA = 2;
-
-    private final Collection<String> thisColumnLabels;
-    private final Collection<String> thatColumnLabels;
-    private final Collection<String> commonColumnLabels;
-
-    private final Map<String, Class<?>> thisJavaTypes;
-    private final Map<String, Class<?>> thatJavaTypes;
-    private final Map<String, Class<?>> commonJavaTypes;
-
-
-    private final Map<Integer, List<Map<String, Object>>> diffRecords = new HashMap<>();
-
-    private int thisCount;
-    private int thatCount;
-
-
-    QueryDiff(ResultSet thisResult, ResultSet thatResult) throws SQLException, ClassNotFoundException {
-
-        requireNonNull(thisResult, "thisResult is null");
-        requireNonNull(thatResult, "thatResult is null");
-
-        ResultSetMetaData thisMetaData = thisResult.getMetaData();
-        ResultSetMetaData thatMetaData = thatResult.getMetaData();
-
-        List<String> allThisColumnLabels = getColumnLabels(thisMetaData);
-        List<String> allThatColumnLabels = getColumnLabels(thatMetaData);
-        commonColumnLabels = intersect(allThisColumnLabels, allThatColumnLabels);
-        thisColumnLabels = difference(allThisColumnLabels, commonColumnLabels);
-        thatColumnLabels = difference(allThatColumnLabels, commonColumnLabels);
-
-        Map<String, Class<?>> allThisJavaTypes = getJavaTypes(thisMetaData);
-        Map<String, Class<?>> allThatJavaTypes = getJavaTypes(thatMetaData);
-        commonJavaTypes = intersect(allThisJavaTypes, allThatJavaTypes);
-        thisJavaTypes = difference(allThisJavaTypes, commonJavaTypes);
-        thatJavaTypes = difference(allThatJavaTypes, commonJavaTypes);
-
-        Collection<String> commonColumns = new ArrayList<>();
-        for (String commonColumnLabel : commonColumnLabels) {
-            if (commonJavaTypes.containsKey(commonColumnLabel)) {
-                commonColumns.add(commonColumnLabel);
-            }
+    private static final Object NULL = new Object() {
+        public String toString() {
+            return "<empty>";
         }
+    };
+
+    private List<ColumnMetaData> thisColumns;
+    private List<ColumnMetaData> thatColumns;
+    private List<ColumnMetaData> commonColumns;
+
+    private List<Object[]> records = new ArrayList<>();
+
+    QueryDiff(ResultSet thisResult, ResultSet thatResult) throws ClassNotFoundException, SQLException {
+        thisColumns = getColumnMetaData(thisResult.getMetaData());
+        thatColumns = getColumnMetaData(thatResult.getMetaData());
+        commonColumns = new ArrayList<>(thisColumns);
+        commonColumns.retainAll(thatColumns);
+        thisColumns.removeAll(commonColumns);
+        thatColumns.removeAll(commonColumns);
 
         boolean thisNext, thatNext;
         int rowNum = 0;
+        int l = commonColumns.size();
+        Object[] emptyRecord = emptyRecord(l);
+        Object[] nextRecord = emptyRecord(l * 2 + 1);
         while ((thisNext = thisResult.next()) | (thatNext = thatResult.next())) {
             rowNum++;
-            Map<String, Object> thisRecord = emptyMap();
-            Map<String, Object> thatRecord = emptyMap();
+            Object[] thisRecord;
+            Object[] thatRecord;
             if (thisNext) {
-                thisCount++;
-                thisRecord = readCurrent(thisResult, commonColumns);
+                thisRecord = readCurrent(thisResult);
+            } else {
+                thisRecord = emptyRecord;
             }
             if (thatNext) {
-                thatCount++;
-                thatRecord = readCurrent(thatResult, commonColumns);
+                thatRecord = readCurrent(thatResult);
+            } else {
+                thatRecord = emptyRecord;
             }
-            Map<String, Object> commonData = intersect(thisRecord, thatRecord);
-            thisRecord = difference(thisRecord, commonData);
-            thatRecord = difference(thatRecord, commonData);
-            if (!thisRecord.isEmpty() || !thatRecord.isEmpty()) {
-                List<Map<String, Object>> diffRecord = new ArrayList<>(3);
-                diffRecord.add(thisRecord);
-                diffRecord.add(thatRecord);
-                diffRecord.add(commonData);
-                diffRecords.put(rowNum, diffRecord);
+            boolean diffFound = false;
+            for (int i = 0; i < l; i++) {
+                if (!CompareUtils.isEqual(thisRecord[i], thatRecord[i])) {
+                    diffFound = true;
+                    nextRecord[i + 1] = thisRecord[i];
+                    nextRecord[i + l + 1] = thatRecord[i];
+                }
+            }
+            if (diffFound) {
+                records.add(nextRecord);
+                nextRecord[0] = rowNum;
+                nextRecord = emptyRecord(l * 2 + 1);
             }
         }
     }
 
     public boolean isEqual() {
-        return thisColumnLabels.isEmpty() &&
-                thatColumnLabels.isEmpty() &&
-                thisJavaTypes.isEmpty() &&
-                thatJavaTypes.isEmpty() &&
-                diffRecords.isEmpty();
+        return thisColumns.isEmpty() &&
+                thatColumns.isEmpty() &&
+                records.isEmpty();
     }
 
-    @Override
+    Object[] emptyRecord(int length) {
+        Object[] empty = new Object[length];
+        for (int i = 0; i < length; i++) {
+            empty[i] = NULL;
+        }
+        return empty;
+    }
+
+    Object[] readCurrent(ResultSet resultSet) throws SQLException {
+        Object[] record = new Object[commonColumns.size()];
+        int i = 0;
+        for (ColumnMetaData column : commonColumns) {
+            record[i++] = resultSet.getObject(column.getColumnIndex());
+        }
+        return record;
+    }
+
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        appendColumnLabels(sb);
-        sb.append(",\n");
-        appendJavaTypes(sb);
-        sb.append(",\n");
-        appendCount(sb);
-        sb.append(",\n");
-        appendDataDiff(sb);
-        return sb.toString();
+        StringWriter sw = new StringWriter();
+        printTo(sw);
+        return sw.toString();
     }
 
-    private void appendColumnLabels(StringBuilder sb) {
-        if (thisColumnLabels.isEmpty() && thatColumnLabels.isEmpty()) {
-            sb.append("column labels: match");
-        } else {
-            sb
-                    .append("column labels: common: [ ")
-                    .append(join(", ", commonColumnLabels))
-                    .append(" ], thisResult: [ ")
-                    .append(join(", ", thisColumnLabels))
-                    .append(" ], thatResult: [ ")
-                    .append(join(", ", thatColumnLabels))
-                    .append(" ]");
-        }
-    }
+    public void printTo(Writer out) {
+        PrintWriter pw = out instanceof PrintWriter ? (PrintWriter) out : new PrintWriter(out);
+        pw
+                .append("columns: [\n\tall: [\n\t\t")
+                .append(join(",\n\t\t", commonColumns))
+                .append("\n\t],\n\tthisResult: [\n\t\t")
+                .append(join(",\n\t\t", thisColumns))
+                .append("\n\t],\n\tthatResult: [\n\t\t")
+                .append(join(",\n\t\t", thatColumns))
+                .append("\n\t]\n]\ndata: [");
 
-    private void appendJavaTypes(StringBuilder sb) {
-        if (thisJavaTypes.isEmpty() && thatJavaTypes.isEmpty()) {
-            sb.append("java types: match");
-        } else {
-            sb
-                    .append("java types: common: [ ")
-                    .append(join(", ", ": ", commonJavaTypes))
-                    .append(" ], thisResult: [ ")
-                    .append(join(", ", ": ", thisJavaTypes))
-                    .append(" ], thatResult: [ ")
-                    .append(join(", ", ": ", thatJavaTypes))
-                    .append(" ]");
-        }
-    }
-
-    private void appendCount(StringBuilder sb) {
-        if (thisCount == thatCount) {
-            sb
-                    .append("count: ")
-                    .append(thisCount);
-        } else {
-            sb
-                    .append("count: [ thisResult: ")
-                    .append(thisCount)
-                    .append(", thatResult: ")
-                    .append(thatCount)
-                    .append(" ]");
-        }
-    }
-
-    private void appendDataDiff(StringBuilder sb) {
-        if (diffRecords.isEmpty()) {
-            sb.append("data: match");
-        } else {
-            sb.append("data: [\n");
-            String sep = "\t";
-            for (Map.Entry<Integer, List<Map<String, Object>>> diffRecord : diffRecords.entrySet()) {
-                List<Map<String, Object>> value = diffRecord.getValue();
-                sb
-                        .append(sep)
-                        .append("row ")
-                        .append(diffRecord.getKey())
-                        .append(": common: [ ")
-                        .append(join(", ", ": ", value.get(COMMON_DATA)))
-                        .append(" ], thisResult: [ ")
-                        .append(join(", ", ": ", value.get(THIS_RECORD_DATA)))
-                        .append(" ], thatResult: [ ")
-                        .append(join(", ", ": ", value.get(THAT_RECORD_DATA)))
-                        .append(" ]");
-
-                sep = ",\n";
+        int l = commonColumns.size();
+        String sep = "\n\t";
+        for (Object[] record : records) {
+            pw
+                    .append(sep)
+                    .append("[")
+                    .append(valueOf(record[0]));
+            sep = ",\n\t";
+            for (int i = 1; i < l; i++) {
+                pw
+                        .append(", (")
+                        .append(valueOf(record[i]))
+                        .append(" | ")
+                        .append(valueOf(record[i + l])).append(")");
             }
-            sb.append("\n]");
+            pw.append("]");
         }
+        pw.append("]\n");
     }
 }
-
-
-
+                               

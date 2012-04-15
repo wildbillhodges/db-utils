@@ -23,49 +23,47 @@ import java.util.*;
 public class JdbcUtils {
 
 
-    static final String ROW_NUMBER = "resultSet.rowNumber";
+//    static final String ROW_NUMBER = "resultSet.rowNumber";
 
     static final String DRIVER_NAME = "jdbc.driver", JDBC_URL = "jdbc.url";
 
     static Connection getConnection(Properties properties) throws ClassNotFoundException, SQLException {
         Class.forName((String) properties.get(DRIVER_NAME));
-        return  DriverManager.getConnection((String) properties.get(JDBC_URL), properties);
+        return DriverManager.getConnection((String) properties.get(JDBC_URL), properties);
     }
 
-
-    static List<String> getColumnLabels(ResultSetMetaData metaData) throws SQLException {
-        List<String> labels = new ArrayList<>();
+    static List<ColumnMetaData> getColumnMetaData(ResultSetMetaData metaData) throws SQLException, ClassNotFoundException {
+        List<ColumnMetaData> columns = new ArrayList<>();
         for (int i = 1, l = metaData.getColumnCount(); i <= l; i++) {
-            labels.add(metaData.getColumnLabel(i));
+            columns.add(new ColumnMetaData(i, metaData));
         }
-        return labels;
+        return columns;
     }
 
-    static Map<String, Class<?>> getJavaTypes(ResultSetMetaData metaData) throws SQLException, ClassNotFoundException {
-        Map<String, Class<?>> types = new HashMap<>();
-        for (int i = 1, l = metaData.getColumnCount(); i <= l; i++) {
-            types.put(metaData.getColumnLabel(i), Class.forName(metaData.getColumnClassName(i)));
-        }
-        return types;
-    }
 
-    //     static List<Map<String, Object>> read(ResultSet resultSet) throws SQLException {
-//        List<Map<String, Object>> results = new ArrayList<>();
-//        ResultSetMetaData metaData = resultSet.getMetaData();
-//        while (resultSet.next()) {
-//            Map<String, Object> result = readCurrent(resultSet, metaData);
-//            results.add(result);
+//    static List<String> getColumnLabels(ResultSetMetaData metaData) throws SQLException {
+//        List<String> labels = new ArrayList<>();
+//        for (int i = 1, l = metaData.getColumnCount(); i <= l; i++) {
+//            labels.add(metaData.getColumnLabel(i));
 //        }
-//        return results;
+//        return labels;
 //    }
-//
-    static Map<String, Object> readCurrent(ResultSet resultSet, Collection<String> columnLabels) throws SQLException {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put(ROW_NUMBER, resultSet.getRow());
-        for (String columnLabel : columnLabels) {
-            result.put(columnLabel, resultSet.getObject(columnLabel));
-        }
-        return result;
-    }
+
+//    static Map<String, Class<?>> getJavaTypes(ResultSetMetaData metaData) throws SQLException, ClassNotFoundException {
+//        Map<String, Class<?>> types = new HashMap<>();
+//        for (int i = 1, l = metaData.getColumnCount(); i <= l; i++) {
+//            types.put(metaData.getColumnLabel(i), Class.forName(metaData.getColumnClassName(i)));
+//        }
+//        return types;
+//    }
+
+//    static Map<String, Object> readCurrent(ResultSet resultSet, Collection<String> columnLabels) throws SQLException {
+//        Map<String, Object> result = new LinkedHashMap<>();
+//        result.put(ROW_NUMBER, resultSet.getRow());
+//        for (String columnLabel : columnLabels) {
+//            result.put(columnLabel, resultSet.getObject(columnLabel));
+//        }
+//        return result;
+//    }
 
 }

@@ -19,6 +19,7 @@ import com.beust.jcommander.Parameters;
 import net.amoabeng.util.cli.Command;
 import net.amoabeng.util.cli.FileContentConverter;
 
+import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.List;
@@ -63,7 +64,7 @@ public class Main {
                  ResultSet thatResult = connection.createStatement().executeQuery(queries.get(1))) {
 
                 QueryDiff queryDiff = new QueryDiff(thisResult, thatResult);
-                System.out.println(queryDiff);
+                queryDiff.printTo(new OutputStreamWriter(System.out));
             }
         }
     }

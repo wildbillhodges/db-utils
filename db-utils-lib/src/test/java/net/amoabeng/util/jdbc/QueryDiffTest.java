@@ -16,6 +16,7 @@ package net.amoabeng.util.jdbc;
 
 import org.testng.annotations.Test;
 
+import java.io.OutputStreamWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -31,29 +32,37 @@ public class QueryDiffTest extends Tests {
     public void testQueryDiff1() throws SQLException, ClassNotFoundException {
         ResultSet thisResult = connection.createStatement().executeQuery("select * from test_table");
         ResultSet thatResult = connection.createStatement().executeQuery("select * from test_table");
+
+        long t = System.currentTimeMillis();
         QueryDiff queryDiff = new QueryDiff(thisResult, thatResult);
-//        System.out.println(queryDiff);
-//        System.out.println("-------------------");
+        queryDiff.printTo(new OutputStreamWriter(System.out));        System.out.println("-------------------");
         assertTrue(queryDiff.isEqual());
+        System.out.println("t = " + (System.currentTimeMillis() - t));
     }
 
     @Test
     public void testQueryDiff2() throws SQLException, ClassNotFoundException {
         ResultSet thisResult = connection.createStatement().executeQuery("select * from test_table order by id asc");
         ResultSet thatResult = connection.createStatement().executeQuery("select * from test_table order by id desc");
+
+        long t = System.currentTimeMillis();
         QueryDiff queryDiff = new QueryDiff(thisResult, thatResult);
-//        System.out.println(queryDiff);
-//        System.out.println("-------------------");
+        queryDiff.printTo(new OutputStreamWriter(System.out));
+        System.out.println("-------------------");
         assertFalse(queryDiff.isEqual());
+        System.out.println("t = " + (System.currentTimeMillis() - t));
     }
 
     @Test
     public void testQueryDiff3() throws SQLException, ClassNotFoundException {
         ResultSet thisResult = connection.createStatement().executeQuery("select id, foo from test_table");
         ResultSet thatResult = connection.createStatement().executeQuery("select id, bar from test_table");
+
+        long t = System.currentTimeMillis();
         QueryDiff queryDiff = new QueryDiff(thisResult, thatResult);
-//        System.out.println(queryDiff);
-//        System.out.println("-------------------");
+        queryDiff.printTo(new OutputStreamWriter(System.out));
+        System.out.println("-------------------");
         assertFalse(queryDiff.isEqual());
+        System.out.println("t = " + (System.currentTimeMillis() - t));
     }
 }
