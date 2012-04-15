@@ -40,7 +40,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass> net.amoabeng.util.jdbc.Main</mainClass>
+                            <mainClass>net.amoabeng.util.jdbc.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -48,6 +48,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
