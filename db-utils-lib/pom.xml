@@ -1,0 +1,57 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>net.amoabeng.db-utils</groupId>
+    <artifactId>db-utils-lib</artifactId>
+    <name>db-utils-lib</name>
+    <packaging>jar</packaging>
+    <parent>
+        <groupId>net.amoabeng</groupId>
+        <artifactId>db-utils</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>net.amoabeng.utils</groupId>
+            <artifactId>common-utils</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>net.amoabeng.utils</groupId>
+            <artifactId>io-utils</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
+    <!-- TODO <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>dbunit-maven-plugin</artifactId>
+                <version>1.0-beta-3</version>
+                <configuration>
+                    <dataTypeFactoryName>org.dbunit.ext.oracle.OracleDataTypeFactory</dataTypeFactoryName>
+                    <driver>oracle.jdbc.driver.OracleDriver</driver>
+                    <username>hr</username>
+                    <password>hr</password>
+                    <url>jdbc:oracle:thin:@localhost:1521:XE</url>
+                    <src>src/test/resources/sample-data.xml</src>
+                    <type>CLEAN_INSERT</type>
+                    <schema>HR</schema>
+                    <skip>${skipTests}</skip>
+                    <transaction>true</transaction>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.oracle</groupId>
+                        <artifactId>ojdbc14</artifactId>
+                        <version>10.2.0.2.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>-->
+</project>

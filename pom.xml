@@ -1,0 +1,53 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>net.amoabeng</groupId>
+    <artifactId>db-utils</artifactId>
+    <name>db-utils</name>
+    <packaging>pom</packaging>
+    <version>1.0.0-SNAPSHOT</version>
+    <parent>
+        <groupId>net.amoabeng</groupId>
+        <artifactId>default-pom</artifactId>
+        <version>1.0.1-SNAPSHOT</version>
+    </parent>
+
+    <repositories>
+        <repository>
+            <id>release-amoabeng.net</id>
+            <name>release</name>
+            <url>http://repo.amoabeng.net/release</url>
+        </repository>
+        <repository>
+            <id>snapshot-amoabeng.net</id>
+            <name>snapshot</name>
+            <url>http://repo.amoabeng.net/snapshot</url>
+            <snapshots />
+        </repository>
+    </repositories>
+
+    <modules>
+        <module>db-utils-lib</module>
+        <module>db-utils-cli</module>
+    </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
+            <version>2.2.8</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.dbunit</groupId>
+            <artifactId>dbunit</artifactId>
+            <version>2.4.8</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
